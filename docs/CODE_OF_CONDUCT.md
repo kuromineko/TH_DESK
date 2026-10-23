@@ -1,18 +1,29 @@
-# ข้อตกลงการปฏิบัติตนในชุมชน (Code of Conduct)
+# ข้อตกลงการปฏิบัติตนในชุมชน / Community Code of Conduct
 
-## คำมั่นสัญญาของเรา (Our Pledge)
-เพื่อสร้างสังคมโอเพนซอร์สที่เปิดกว้างและเป็นมิตร ผู้พัฒนาและผู้มีส่วนร่วมในโปรเจกต์ **TH_DESK** และ **TH_DESK Server** ขอให้คำมั่นว่าจะทำให้การมีส่วนร่วมในโปรเจกต์นี้เป็นประสบการณ์ที่ปราศจากการคุกคามสำหรับทุกคน
+## 🇹🇭 ภาษาไทย (Thai)
 
-## แนวทางการปฏิบัติ (Our Standards)
-พฤติกรรมที่ช่วยสร้างสภาพแวดล้อมที่ดี ได้แก่:
+### คำมั่นสัญญาของเรา
+เพื่อสร้างสังคมโอเพนซอร์สที่เปิดกว้างและเป็นมิตร ผู้พัฒนาและผู้มีส่วนร่วมในโปรเจกต์ **TH_DESK** และ **TH_DESK Server** ขอให้คำมั่นว่าจะทำให้การมีส่วนร่วมในโปรเจกต์นี้เป็นประสบการณ์ที่ปราศจากการคุกคามและให้เกียรติซึ่งกันและกันสำหรับทุกคน
+
+### แนวทางการปฏิบัติ
 * ใช้ถ้อยคำที่สุภาพ ให้เกียรติ และช่วยเหลือเกื้อกูลผู้ใช้งานคนอื่น
 * เปิดรับความคิดเห็น คำติชม และข้อเสนอแนะเชิงสร้างสรรค์
-* มุ่งเน้นสิ่งที่ดีที่สุดสำหรับชุมชนผู้ใช้งานโดยรวม
+* เคารพสัญญาอนุญาตโอเพนซอร์ส **AGPL-3.0** โดยไม่นำซอร์สโค้ดไปแอบอ้างปิดซอร์สขาย
 
-พฤติกรรมที่ไม่พึงประสงค์ ได้แก่:
-* การใช้ถ้อยคำโจมตีส่วนบุคคล การดูหมิ่น หรือการคุกคามในทุกรูปแบบ
-* การเผยแพร่ข้อมูลส่วนตัวของผู้อื่นโดยไม่ได้รับอนุญาต
-* การนำซอร์สโค้ดไปแอบอ้างปิดซอร์สขายโดยละเมิดสัญญาอนุญาต AGPL-3.0
-
-## การบังคับใช้ (Enforcement)
+### การบังคับใช้
 ผู้ดูแลโปรเจกต์ ([kuromineko](https://github.com/kuromineko)) มีสิทธิ์ในการลบ แก้ไข หรือปฏิเสธความคิดเห็น โค้ด หรือ Issues ที่ไม่สอดคล้องกับข้อตกลงนี้
+
+---
+
+## 🇬🇧 English
+
+### Our Pledge
+In the interest of fostering an open and welcoming environment, we as contributors and maintainers of **TH_DESK** and **TH_DESK Server** pledge to make participation in our project and our community a harassment-free experience for everyone.
+
+### Our Standards
+* Use welcoming, respectful, and inclusive language.
+* Gracefully accept constructive criticism and feedback.
+* Respect the **AGPL-3.0** open-source license and do not misappropriate the project into proprietary closed-source products.
+
+### Enforcement
+Project maintainers ([kuromineko](https://github.com/kuromineko)) have the right and responsibility to remove, edit, or reject comments, commits, code, issues, and other contributions that are not aligned to this Code of Conduct.
