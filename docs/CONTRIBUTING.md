@@ -1,46 +1,22 @@
-# Contributing to RustDesk
+# แนวทางการร่วมพัฒนาโปรเจกต์ TH_DESK (Contributing Guide)
 
-RustDesk welcomes contributions from everyone. Here are the guidelines if you are
-thinking of helping us:
+โปรเจกต์ **TH_DESK** และ **TH_DESK Server** ยินดีต้อนรับนักพัฒนาและผู้ใช้งานทุกคนที่ต้องการมีส่วนร่วมในการพัฒนา ปรับปรุงฟีเจอร์ หรือแจ้งปัญหาการใช้งาน!
 
-## Contributions
+---
 
-Contributions to RustDesk or its dependencies should be made in the form of GitHub
-pull requests. Each pull request will be reviewed by a core contributor
-(someone with permission to land patches) and either landed in the main tree or
-given feedback for changes that would be required. All contributions should
-follow this format, even those from core contributors.
+## 🛠️ ช่องทางการมีส่วนร่วม (How to Contribute)
 
-Should you wish to work on an issue, please claim it first by commenting on
-the GitHub issue that you want to work on it. This is to prevent duplicated
-efforts from contributors on the same issue.
+1. **การแจ้งบั๊กและปัญหาการใช้งาน (Reporting Bugs):**
+   * เปิดแจ้งได้ที่เมนู [Issues](https://github.com/kuromineko/TH_DESK/issues) โดยระบุรุ่นของ Windows, ขั้นตอนที่ทำให้เกิดปัญหา และภาพหน้าจอประกอบ
+2. **การเสนอฟีเจอร์ใหม่ (Feature Requests):**
+   * สามารถเปิด Issue เพื่อเสนอไอเดียสำหรับปรับปรุงทั้งฝั่ง Client (`TH_DESK`) และฝั่งตัวจัดการเซิร์ฟเวอร์ (`TH_DESK_Server`)
+3. **การส่งโค้ดแก้ไข (Pull Requests):**
+   * Fork โปรเจกต์ไปยังบัญชีของคุณ
+   * สร้าง Branch ใหม่สำหรับฟีเจอร์หรือการแก้ไขบั๊กของคุณ
+   * ตรวจสอบให้แน่ใจว่าโค้ดสามารถคอมไพล์ผ่าน และปฏิบัติตามสัญญาอนุญาต **AGPL-3.0**
+   * ส่ง Pull Request เข้ามาที่ Branch หลักของโปรเจกต์
 
-## Pull Request Checklist
+---
 
-- Branch from the master branch and, if needed, rebase to the current master
-  branch before submitting your pull request. If it doesn't merge cleanly with
-  master you may be asked to rebase your changes.
-
-- Commits should be as small as possible, while ensuring that each commit is
-  correct independently (i.e., each commit should compile and pass tests).
-
-- Commits should be accompanied by a Developer Certificate of Origin
-  (http://developercertificate.org) sign-off, which indicates that you (and
-  your employer if applicable) agree to be bound by the terms of the
-  [project license](../LICENCE). In git, this is the `-s` option to `git commit`
-
-- If your patch is not getting reviewed or you need a specific person to review
-  it, you can @-reply a reviewer asking for a review in the pull request or a
-  comment, or you can ask for a review via [email](mailto:info@rustdesk.com).
-
-- Add tests relevant to the fixed bug or new feature.
-
-For specific git instructions, see [GitHub workflow 101](https://github.com/servo/servo/wiki/GitHub-workflow).
-
-## Conduct
-
-https://github.com/rustdesk/rustdesk/blob/master/docs/CODE_OF_CONDUCT.md
-
-## Communication
-
-RustDesk contributors frequent the [Discord](https://discord.gg/nDceKgxnkV).
+## 📜 ข้อกำหนดด้านสัญญาอนุญาต (License Agreement)
+การส่งโค้ดเข้าร่วมในโปรเจกต์นี้ ถือว่าคุณยินยอมให้เผยแพร่ผลงานของคุณภายใต้สัญญาอนุญาต **GNU Affero General Public License v3.0 (AGPL-3.0)** เช่นเดียวกับตัวโปรเจกต์หลัก
