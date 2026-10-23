@@ -1,6 +1,6 @@
 <div align="center">
 
-<img width="1600" height="480" alt="TH_DESK_GitHub_Banner (1)" src="https://github.com/user-attachments/assets/18f335cd-da99-430f-97e5-8c1ba43a48be" />
+<img width="1600" height="480" alt="TH_DESK_GitHub_Banner (1)" src="https://github.com/user-attachments/assets/080c15da-6073-4e84-99ea-7b9e108569bb" />
 
 
 # 💻 TH_DESK — Remote Desktop Client
@@ -12,6 +12,8 @@
 [![License](https://img.shields.io/badge/License-AGPL--3.0-10B981?style=for-the-badge)](https://www.gnu.org/licenses/agpl-3.0.html)
 [![Server Manager](https://img.shields.io/badge/Server%20Manager-TH__DESK__Server-A78BFA?style=for-the-badge&logo=github)](https://github.com/kuromineko/TH_DESK_Server)
 
+**[🇹🇭 อ่านภาษาไทย](#-คุณสมบัติเด่น-key-features) | [🇬🇧 Read in English](#-english-documentation)**
+
 </div>
 
 ---
@@ -19,14 +21,14 @@
 ## ✨ คุณสมบัติเด่น (Key Features)
 
 * ⚡ **High-Performance P2P Remote Desktop:** รีโมทควบคุมหน้าจอความหน่วงต่ำ ภาพคมชัดลื่นไหล รองรับการรับ-ส่งไฟล์ คลิปบอร์ด และเสียงแบบเรียลไทม์
-* 🔗 **ออกแบบให้ทำงานคู่กับ [TH_DESK Server Manager](https://github.com/kuromineko/TH_DESK_Server):** รองรับการเชื่อมต่อเข้าเซิร์ฟเวอร์ส่วนตัวผ่านโดเมน **DDNS** และการตั้งค่า Port Forwarding (แยกพอร์ตนอก/พอร์ตใน) ได้อย่างสมบูรณ์
+* 🔗 **ทำงานคู่กับ [TH_DESK Server Manager](https://github.com/kuromineko/TH_DESK_Server):** รองรับการเชื่อมต่อเข้าเซิร์ฟเวอร์ส่วนตัวผ่านโดเมน **DDNS** และการตั้งค่า Port Forwarding (แยกพอร์ตนอก/พอร์ตใน) ได้อย่างสมบูรณ์
 * 📥 **Zero-Config Auto Setup (ไม่ต้องกรอก IP/Key เอง):** รองรับการดึงค่าเซิร์ฟเวอร์อัตโนมัติจากไฟล์ `TH_DESK2.toml` หรือสคริปต์ `Setup_TH_DESK_Client.bat` ที่ส่งออกมาจากตัวจัดการเซิร์ฟเวอร์
-* 🔒 **End-to-End Encryption:** เข้ารหัสการเชื่อมต่อทุกเซสชันด้วยรหัสความปลอดภัย Public/Private Key (`ed25519`) ป้องกันการดักจับข้อมูลและจำกัดสิทธิ์เฉพาะผู้ที่มี Key ของเซิร์ฟเวอร์เท่านั้น
+* 🔒 **End-to-End Encryption:** เข้ารหัสการเชื่อมต่อทุกเซสชันด้วยรหัสความปลอดภัย Public/Private Key (`ed25519`)
 * 🆓 **100% Free & Open Source:** แจกจ่ายให้ใช้งานได้ฟรี ไม่จำกัดจำนวนเครื่อง ไม่จำกัดเวลาการเชื่อมต่อ และเปิดเผยซอร์สโค้ดทั้งหมดภายใต้สัญญาอนุญาต AGPL-3.0
 
 ---
 
-## 🚀 วิธีใช้งานและเชื่อมต่อเซิร์ฟเวอร์ (Quick Start)
+## 🚀 วิธีใช้งานและเชื่อมต่อเซิร์ฟเวอร์ (Quick Start - TH)
 
 ### วิธีที่ 1: ตั้งค่าอัตโนมัติคลิกเดียว (แนะนำ — ไม่ต้องพิมพ์ IP หรือ Key เอง)
 1. ดาวน์โหลดโปรแกรม **`TH_DESK`** จากหน้า [Releases](https://github.com/kuromineko/TH_DESK/releases)
@@ -35,38 +37,52 @@
 4. เปิดโปรแกรม **TH_DESK** สถานะมุมล่างซ้ายจะขึ้นไฟสีเขียว **พร้อมใช้งาน (Ready)** ทันที
 
 ### วิธีที่ 2: กรอกค่าเซิร์ฟเวอร์ด้วยตัวเอง (Manual Setup)
-1. เปิดโปรแกรม **TH_DESK** คลิกที่ปุ่มเมนู `⋮` (หรือ **การตั้งค่า / Settings**) -> เลือกแถบ **เครือข่าย (Network)**
-2. กดปลดล็อกการตั้งค่า แล้วคลิกที่ **เซิร์ฟเวอร์ ID/Relay (ID/Relay Server)**
-3. นำข้อมูลที่ได้จากโปรแกรม **TH_DESK Server** มาใส่ดังนี้:
+1. เปิดโปรแกรม **TH_DESK** คลิกที่ปุ่มเมนู `⋮` (การตั้งค่า / Settings) -> เลือกแถบ **เครือข่าย (Network)** -> **เซิร์ฟเวอร์ ID/Relay (ID/Relay Server)**
+2. กรอกข้อมูลที่ได้จากโปรแกรม **TH_DESK Server**:
    * **ID Server:** `ชื่อโดเมน-DDNS:OutPort` *(เช่น `your-ddns.thddns.net:4997`)*
    * **Relay Server:** `ชื่อโดเมน-DDNS:RelayOutPort` *(เช่น `your-ddns.thddns.net:4998`)*
    * **Key:** `รหัส Public Key จากหน้าจอโปรแกรม Server`
-4. กด **ตกลง (OK)** เพื่อบันทึก
 
 ---
 
-## 🛠️ การบิ้วด์ไฟล์ติดตั้งด้วยตัวเอง (Build from Source / GitHub Actions)
+# 🇬🇧 English Documentation
 
-โปรเจกต์นี้รองรับการคอมไพล์อัตโนมัติผ่านระบบ **GitHub Actions**:
-1. ไปที่แท็บ **Actions** บนหน้า GitHub Repository นี้
-2. เลือกเวิร์กโฟลว์ที่ต้องการบิ้วด์:
-   * **`Flutter Nightly Build`** — สำหรับคอมไพล์ตัวติดตั้งรุ่นมาตรฐาน (64-bit)
-   * **`Build TH_DESK 32-bit (x86)`** — สำหรับคอมไพล์รุ่น Portable (32-bit รองรับ Windows ทุกเวอร์ชัน)
-3. คลิกปุ่ม **Run workflow** และดาวน์โหลดไฟล์ `.exe` ที่คอมไพล์เสร็จแล้วได้จากหน้า **Releases** หรือ **Artifacts**
+## ✨ Key Features
+
+* ⚡ **Low-Latency P2P Remote Desktop:** Fast screen sharing, file transfer, clipboard sync, and audio streaming powered by Rust and Flutter.
+* 🔗 **Seamless Integration with [TH_DESK Server Manager](https://github.com/kuromineko/TH_DESK_Server):** Designed to work effortlessly with self-hosted DDNS domains and asymmetric NAT port forwarding setups.
+* 📥 **Zero-Config Client Deployment:** Supports automatic server configuration import via `TH_DESK2.toml` or the one-click `Setup_TH_DESK_Client.bat` script exported by the Server Manager.
+* 🔒 **End-to-End Encryption:** Secured with `ed25519` public/private key cryptography.
+* 🆓 **100% Free & Open Source:** Free for everyone with no device or time limits, distributed under the AGPL-3.0 license.
+
+## 🚀 Quick Start (EN)
+
+### Method 1: One-Click Zero-Config Setup (Recommended)
+1. Download **`TH_DESK`** from the [Releases](https://github.com/kuromineko/TH_DESK/releases) page.
+2. In **[TH_DESK Server Manager](https://github.com/kuromineko/TH_DESK_Server)**, click **"📥 Export Client File"**.
+3. Run **`Setup_TH_DESK_Client.bat`** on the client PC to automatically configure the DDNS host, ports, and public key.
+4. Launch **TH_DESK**—the status indicator at the bottom-left will immediately turn green (**Ready**).
+
+### Method 2: Manual Configuration
+1. Open **TH_DESK** -> click `⋮` (**Settings**) -> **Network** -> **ID/Relay Server**.
+2. Enter the connection parameters from your **TH_DESK Server**:
+   * **ID Server:** `your-ddns-domain:OutPort` *(e.g., `your-ddns.thddns.net:4997`)*
+   * **Relay Server:** `your-ddns-domain:RelayOutPort` *(e.g., `your-ddns.thddns.net:4998`)*
+   * **Key:** `Your Server Public Key`
 
 ---
 
-## 📦 ระบบที่เกี่ยวข้องในชุดเดียวกัน (Ecosystem)
+## 📦 Ecosystem Repositories
 
-| โปรเจกต์ (Repository) | รายละเอียด | ลิงก์ดาวน์โหลด / ซอร์สโค้ด |
+| Repository | Description | Link |
 | :--- | :--- | :---: |
-| **💻 TH_DESK (Client)** | โปรแกรมรีโมทเดสก์ท็อปสำหรับเครื่องผู้ใช้งานและเครื่องปลายทาง | [kuromineko/TH_DESK](https://github.com/kuromineko/TH_DESK) |
-| **🖥️ TH_DESK Server (x64)** | โปรแกรมจัดการเซิร์ฟเวอร์สำเร็จรูป (GUI) รองรับ DDNS, แยกพอร์ต IN/OUT และเปิด Firewall อัตโนมัติ | [kuromineko/TH_DESK_Server](https://github.com/kuromineko/TH_DESK_Server) |
+| **💻 TH_DESK (Client)** | Remote Desktop Client for operators and end-users | [kuromineko/TH_DESK](https://github.com/kuromineko/TH_DESK) |
+| **🖥️ TH_DESK Server (x64)** | GUI Server Manager with DDNS, IN/Out Port mapping & Auto Firewall | [kuromineko/TH_DESK_Server](https://github.com/kuromineko/TH_DESK_Server) |
 
 ---
 
 ## 📜 เครดิตและสัญญาอนุญาต (Credits & License)
 
-* **ผู้พัฒนาและดูแลโปรเจกต์ (Developer & Maintainer):** [kuromineko](https://github.com/kuromineko)
-* **ซอร์สโค้ดต้นฉบับ (Upstream Project):** โปรเจกต์นี้พัฒนาต่อยอด (Fork) มาจาก [RustDesk (rustdesk/rustdesk)](https://github.com/rustdesk/rustdesk) ขอขอบคุณทีมพัฒนา RustDesk สำหรับซอร์สโค้ดต้นฉบับที่ยอดเยี่ยม
-* **สัญญาอนุญาต (License):** เผยแพร่ภายใต้สัญญาอนุญาตสาธารณะ **[GNU Affero General Public License v3.0 (AGPL-3.0)](https://www.gnu.org/licenses/agpl-3.0.html)** โดยเปิดเผยซอร์สโค้ดและแจกจ่ายให้ใช้งานได้ฟรี
+* **Developer & Maintainer:** [kuromineko](https://github.com/kuromineko)
+* **Upstream Project:** Derived (Forked) from the open-source [RustDesk (rustdesk/rustdesk)](https://github.com/rustdesk/rustdesk) project. Special thanks to the RustDesk team and contributors.
+* **License:** Distributed under the **[GNU Affero General Public License v3.0 (AGPL-3.0)](https://www.gnu.org/licenses/agpl-3.0.html)**.
