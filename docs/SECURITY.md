@@ -1,9 +1,14 @@
-# Security Policy
+# นโยบายด้านความปลอดภัย (Security Policy)
 
-## Reporting a Vulnerability
+## 🔒 การรักษาความปลอดภัยในการใช้งาน TH_DESK Server
+เพื่อให้การใช้งานระบบรีโมทและเซิร์ฟเวอร์ส่วนตัวของคุณปลอดภัยสูงสุด แนะนำให้ปฏิบัติตามแนวทางดังนี้:
+* **เก็บรักษาไฟล์ Private Key (`id_ed25519`) เป็นความลับ:** เผยแพร่เฉพาะไฟล์หรือรหัส **Public Key (`id_ed25519.pub`)** ให้กับเครื่องลูกข่ายเท่านั้น
+* **การตั้งค่าพอร์ต (Port Forwarding):** เปิดเฉพาะพอร์ตที่จำเป็นต้องใช้งานสำหรับ `hbbs` และ `hbbr`
+* **เปลี่ยนคีย์ทันทีเมื่อสงสัยว่าข้อมูลรั่วไหล:** คุณสามารถกดปุ่ม **"🔑 ลบและสร้าง Public Key ใหม่"** ในหน้าตั้งค่าระบบของโปรแกรม **TH_DESK Server** ได้ตลอดเวลา
 
-We value security for the project very highly. We encourage all users to report any vulnerabilities they discover to us.
-If you find a security vulnerability in the RustDesk project, please report it responsibly by sending an email to info@rustdesk.com.
+---
 
-At this juncture, we don't have a bug bounty program. We are a small team trying to solve a big problem. We urge you to report any vulnerabilities responsibly
-so that we can continue building a secure application for the entire community.
+## 🚨 การรายงานช่องโหว่ด้านความปลอดภัย (Reporting a Vulnerability)
+หากคุณตรวจพบช่องโหว่ด้านความปลอดภัยในโปรเจกต์ **TH_DESK** หรือ **TH_DESK Server**:
+* กรุณาแจ้งปัญหาผ่านระบบ [GitHub Issues](https://github.com/kuromineko/TH_DESK/issues) หรือผ่านแท็บ **Security Advisories** บนหน้าโปรเจกต์ของ [kuromineko](https://github.com/kuromineko)
+* สำหรับช่องโหว่ที่เกิดจากเอนจินต้นฉบับ สามารถตรวจสอบและแจ้งควบคู่ไปยังโปรเจกต์ต้นน้ำได้ที่ [RustDesk Official Repository](https://github.com/rustdesk/rustdesk/security)
