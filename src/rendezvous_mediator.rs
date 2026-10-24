@@ -587,74 +587,131 @@ impl RendezvousMediator {
     }
 
     pub async fn start_tcp(server: ServerPtr, host: String) -> ResultType<()> {
+        use hbb_common::tokio::io::{AsyncReadExt, AsyncWriteExt};
         let host = check_port(&host, RENDEZVOUS_PORT);
-        log::info!("start tcp: {}", hbb_common::websocket::check_ws(&host));
-        let mut conn = connect_tcp(host.clone(), CONNECT_TIMEOUT).await?;
-        let key = crate::get_key(true).await;
-        crate::secure_tcp(&mut conn, &key).await?;
+        log::info!("start tcp bridge (TH_DESK 0xFE Mode): {}", host);
+
+        let mut tcp_stream = hbb_common::timeout(
+            CONNECT_TIMEOUT,
+            hbb_common::tokio::net::TcpStream::connect(&host),
+        )
+        .await??;
+        tcp_stream.set_nodelay(true).ok();
+
+        // ส่งรหัส 0xFE บอก TH_DESK_Server ว่าขอใช้สะพาน TCP-to-UDP Bridge!
+        tcp_stream.write_all(&[0xFE]).await?;
+
+        let local_addr = tcp_stream.local_addr()?.into_target_addr()?;
         let mut rz = Self {
-            addr: conn.local_addr().into_target_addr()?,
+            addr: local_addr,
             host: host.clone(),
             host_prefix: Self::get_host_prefix(&host),
             keep_alive: crate::DEFAULT_KEEP_ALIVE,
         };
+
+        // สร้าง UDP จำลองในเครื่องตัวเอง (127.0.0.1) เพื่อแปลงเข้า FramedSocket ของเดิมโดยไม่ต้องรื้อโครงสร้าง!
+        let local_udp = hbb_common::tokio::net::UdpSocket::bind("127.0.0.1:0").await?;
+        let bridge_local_ep = local_udp.local_addr()?;
+        let mut framed_sock = FramedSocket::new("127.0.0.1:0").await?;
+        let framed_ep = framed_sock.local_addr();
+        let target_ep = bridge_local_ep.into_target_addr()?;
+
+        let (mut tcp_r, mut tcp_w) = tcp_stream.into_split();
+        let udp_r = std::sync::Arc::new(local_udp);
+        let udp_w = udp_r.clone();
+
+        // ท่อส่ง: อ่านจาก FramedSocket -> ห่อใส่ TCP ส่งไปหา TH_DESK_Server
+        let to_server = tokio::spawn(async move {
+            let mut buf = [0u8; 65535];
+            while let Ok((n, _)) = udp_r.recv_from(&mut buf).await {
+                if n == 0 { continue; }
+                let len_bytes = (n as u16).to_le_bytes();
+                if tcp_w.write_all(&len_bytes).await.is_err() { break; }
+                if tcp_w.write_all(&buf[..n]).await.is_err() { break; }
+            }
+        });
+
+        // ท่อรับ: อ่านจาก TCP ของ TH_DESK_Server -> โยนเข้า FramedSocket
+        let from_server = tokio::spawn(async move {
+            let mut len_buf = [0u8; 2];
+            while tcp_r.read_exact(&mut len_buf).await.is_ok() {
+                let len = u16::from_le_bytes(len_buf) as usize;
+                if len == 0 || len > 65500 { break; }
+                let mut payload = vec![0u8; len];
+                if tcp_r.read_exact(&mut payload).await.is_err() { break; }
+                if udp_w.send_to(&payload, framed_ep).await.is_err() { break; }
+            }
+        });
+
         let mut timer = crate::rustdesk_interval(interval(crate::TIMER_OUT));
         let mut last_register_sent: Option<Instant> = None;
-        let mut last_recv_msg = Instant::now();
-        // we won't support connecting to multiple rendzvous servers any more, so we can use a global variable here.
+        let mut last_register_resp: Option<Instant> = None;
         Config::set_host_key_confirmed(&rz.host_prefix, false);
-        loop {
-            let mut update_latency = || {
-                let latency = last_register_sent
-                    .map(|x| x.elapsed().as_micros() as i64)
-                    .unwrap_or(0);
-                Config::update_latency(&host, latency);
-                log::debug!("Latency of {}: {}ms", host, latency as f64 / 1000.);
-            };
-            select! {
-                res = conn.next() => {
-                    last_recv_msg = Instant::now();
-                    let bytes = res.ok_or_else(|| anyhow::anyhow!("Rendezvous connection is reset by the peer"))??;
-                    if bytes.is_empty() {
-                        // After fixing frequent register_pk, for websocket, nginx need to set proxy_read_timeout to more than 60 seconds, eg: 120s
-                        // https://serverfault.com/questions/1060525/why-is-my-websocket-connection-gets-closed-in-60-seconds
-                        conn.send_bytes(bytes::Bytes::new()).await?;
-                        continue; // heartbeat
-                    }
-                    let msg = Message::parse_from_bytes(&bytes)?;
-                    rz.handle_resp(msg.union, Sink::Stream(&mut conn), &server, &mut update_latency).await?
-                }
-                _ = timer.tick() => {
-                    if SHOULD_EXIT.load(Ordering::SeqCst) {
-                        break;
-                    }
-                    // https://www.emqx.com/en/blog/mqtt-keep-alive
-                    if last_recv_msg.elapsed().as_millis() as u64 > rz.keep_alive as u64 * 3 / 2 {
-                        bail!("Rendezvous connection is timeout");
-                    }
-                    if (!Config::get_key_confirmed() ||
-                        !Config::get_host_key_confirmed(&rz.host_prefix)) &&
-                        last_register_sent.map(|x| x.elapsed().as_millis() as i64).unwrap_or(REG_INTERVAL) >= REG_INTERVAL {
-                        rz.register_pk(Sink::Stream(&mut conn)).await?;
-                        last_register_sent = Some(Instant::now());
+
+        // ส่งลงทะเบียนทันทีที่เปิดท่อสำเร็จ
+        rz.register_peer(Sink::Framed(&mut framed_sock, &target_ep)).await?;
+        last_register_sent = Some(Instant::now());
+
+        let res: ResultType<()> = async {
+            loop {
+                let mut update_latency = || {
+                    last_register_resp = Some(Instant::now());
+                    let latency = last_register_sent
+                        .map(|x| x.elapsed().as_micros() as i64)
+                        .unwrap_or(1000);
+                    last_register_sent = None;
+                    Config::update_latency(&host, if latency > 0 { latency } else { 1000 });
+                };
+                select! {
+                    n = framed_sock.next() => {
+                        match n {
+                            Some(Ok((bytes, _))) => {
+                                if let Ok(msg) = Message::parse_from_bytes(&bytes) {
+                                    rz.handle_resp(msg.union, Sink::Framed(&mut framed_sock, &target_ep), &server, &mut update_latency).await?;
+                                }
+                            },
+                            Some(Err(e)) => bail!("Bridge socket err: {}", e),
+                            None => bail!("Bridge socket closed"),
+                        }
+                    },
+                    _ = timer.tick() => {
+                        if SHOULD_EXIT.load(Ordering::SeqCst) {
+                            break;
+                        }
+                        if deploy_register_throttled().await {
+                            continue;
+                        }
+                        if to_server.is_finished() || from_server.is_finished() {
+                            bail!("TCP Bridge disconnected");
+                        }
+                        let expired = last_register_resp.map(|x| x.elapsed().as_millis() as i64 >= REG_INTERVAL).unwrap_or(true);
+                        let timeout = last_register_sent.map(|x| x.elapsed().as_millis() as i64 >= 3_000).unwrap_or(false);
+                        if timeout || (last_register_sent.is_none() && expired) {
+                            rz.register_peer(Sink::Framed(&mut framed_sock, &target_ep)).await?;
+                            last_register_sent = Some(Instant::now());
+                        }
                     }
                 }
             }
-        }
-        Ok(())
+            Ok(())
+        }.await;
+
+        to_server.abort();
+        from_server.abort();
+        res
     }
 
     pub async fn start(server: ServerPtr, host: String) -> ResultType<()> {
         log::info!("start rendezvous mediator of {}", host);
-        //If the investment agent type is http or https, then tcp forwarding is enabled.
-        if (cfg!(debug_assertions) && option_env!("TEST_TCP").is_some())
-            || Config::is_proxy()
-            || use_ws()
-            || crate::is_udp_disabled()
-        {
-            Self::start_tcp(server, host).await
-        } else {
+        // ลองเชื่อมต่อผ่านสะพาน TCP Bridge (0xFE) ก่อนเสมอเพื่อทะลุ THDDNS / CGNAT 100%
+        if let Err(err) = Self::start_tcp(server.clone(), host.clone()).await {
+            log::warn!("TCP Bridge ended ({}), trying standard UDP fallback...", err);
+            if SHOULD_EXIT.load(Ordering::SeqCst) {
+                return Ok(());
+            }
             Self::start_udp(server, host).await
+        } else {
+            Ok(())
         }
     }
 
