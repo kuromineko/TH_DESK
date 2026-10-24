@@ -589,7 +589,7 @@ impl RendezvousMediator {
     pub async fn start_tcp(server: ServerPtr, host: String) -> ResultType<()> {
         use hbb_common::tokio::io::{AsyncReadExt, AsyncWriteExt};
         let host = check_port(&host, RENDEZVOUS_PORT);
-        log::info!("start tcp bridge (TH_DESK 0xFE Mode): {}", host);
+        log::info!("start tcp bridge (TH_DESK Direct 0xFE Mode): {}", host);
 
         let mut tcp_stream = hbb_common::timeout(
             CONNECT_TIMEOUT,
@@ -598,110 +598,181 @@ impl RendezvousMediator {
         .await??;
         tcp_stream.set_nodelay(true).ok();
 
-        // ส่งรหัส 0xFE บอก TH_DESK_Server ว่าขอใช้สะพาน TCP-to-UDP Bridge!
+        // 1. ส่งรหัส 0xFE บอก TH_DESK_Server ว่าขอเปิดท่อสะพาน TCP-to-UDP Bridge
         tcp_stream.write_all(&[0xFE]).await?;
 
-        // สร้าง UDP จำลองในเครื่องตัวเอง (127.0.0.1)
-        let local_udp = hbb_common::tokio::net::UdpSocket::bind("127.0.0.1:0").await?;
-        let bridge_local_addr = local_udp.local_addr()?;
-        let (mut framed_sock, target_ep) = new_udp_for(&bridge_local_addr.to_string(), CONNECT_TIMEOUT).await?;
-
+        let local_addr = tcp_stream.local_addr()?.into_target_addr()?;
         let mut rz = Self {
-            addr: target_ep.clone(),
+            addr: local_addr,
             host: host.clone(),
             host_prefix: Self::get_host_prefix(&host),
             keep_alive: crate::DEFAULT_KEEP_ALIVE,
         };
-
-        let (mut tcp_r, mut tcp_w) = tcp_stream.into_split();
-        let udp_r = std::sync::Arc::new(local_udp);
-        let udp_w = udp_r.clone();
-        let client_udp_addr = std::sync::Arc::new( std::sync::Mutex::new(None::<SocketAddr>) );
-        let client_udp_addr_clone = client_udp_addr.clone();
-
-        // ท่อส่ง: อ่านจาก FramedSocket -> ห่อใส่ TCP ส่งไปหา TH_DESK_Server
-        let to_server = tokio::spawn(async move {
-            let mut buf = [0u8; 65535];
-            while let Ok((n, src_addr)) = udp_r.recv_from(&mut buf).await {
-                if n == 0 { continue; }
-                *client_udp_addr_clone.lock().unwrap() = Some(src_addr);
-                let len_bytes = (n as u16).to_le_bytes();
-                if tcp_w.write_all(&len_bytes).await.is_err() { break; }
-                if tcp_w.write_all(&buf[..n]).await.is_err() { break; }
-            }
-        });
-
-        // ท่อรับ: อ่านจาก TCP ของ TH_DESK_Server -> โยนกลับเข้า FramedSocket
-        let from_server = tokio::spawn(async move {
-            let mut len_buf = [0u8; 2];
-            while tcp_r.read_exact(&mut len_buf).await.is_ok() {
-                let len = u16::from_le_bytes(len_buf) as usize;
-                if len == 0 || len > 65500 { break; }
-                let mut payload = vec![0u8; len];
-                if tcp_r.read_exact(&mut payload).await.is_err() { break; }
-                let dest_opt = *client_udp_addr.lock().unwrap();
-                if let Some(dest) = dest_opt {
-                    if udp_w.send_to(&payload, dest).await.is_err() { break; }
-                }
-            }
-        });
 
         let mut timer = crate::rustdesk_interval(interval(crate::TIMER_OUT));
         let mut last_register_sent: Option<Instant> = None;
         let mut last_register_resp: Option<Instant> = None;
         Config::set_host_key_confirmed(&rz.host_prefix, false);
 
-        // ส่งลงทะเบียนทันทีที่เปิดท่อสำเร็จ
-        rz.register_peer(Sink::Framed(&mut framed_sock, &target_ep)).await?;
-        last_register_sent = Some(Instant::now());
+        // ฟังก์ชันช่วยส่ง Protobuf Message ผ่านท่อ 0xFE โดยตรง (2-byte Little Endian Length + Payload)
+        async fn send_bridge_msg(
+            stream: &mut hbb_common::tokio::net::TcpStream,
+            msg: &Message,
+        ) -> ResultType<()> {
+            use hbb_common::tokio::io::AsyncWriteExt;
+            let bytes = msg.write_to_bytes()?;
+            let len = (bytes.len() as u16).to_le_bytes();
+            stream.write_all(&len).await?;
+            stream.write_all(&bytes).await?;
+            stream.flush().await?;
+            Ok(())
+        }
 
-        let res: ResultType<()> = async {
-            loop {
-                let mut update_latency = || {
-                    last_register_resp = Some(Instant::now());
-                    let latency = last_register_sent
-                        .map(|x| x.elapsed().as_micros() as i64)
-                        .unwrap_or(1000);
-                    last_register_sent = None;
-                    Config::update_latency(&host, if latency > 0 { latency } else { 1000 });
-                };
-                select! {
-                    n = framed_sock.next() => {
-                        match n {
-                            Some(Ok((bytes, _))) => {
-                                if let Ok(msg) = Message::parse_from_bytes(&bytes) {
-                                    rz.handle_resp(msg.union, Sink::Framed(&mut framed_sock, &target_ep), &server, &mut update_latency).await?;
+        // 2. ส่ง RegisterPeer + RegisterPk ทันทีที่เปิดท่อสำเร็จ!
+        {
+            let mut msg_out = Message::new();
+            msg_out.set_register_peer(RegisterPeer {
+                id: Config::get_id(),
+                serial: Config::get_serial(),
+                ..Default::default()
+            });
+            send_bridge_msg(&mut tcp_stream, &msg_out).await?;
+            last_register_sent = Some(Instant::now());
+        }
+
+        let mut len_buf = [0u8; 2];
+        loop {
+            select! {
+                res = tcp_stream.read_exact(&mut len_buf) => {
+                    res?;
+                    let len = u16::from_le_bytes(len_buf) as usize;
+                    if len == 0 || len > 65500 {
+                        bail!("Invalid packet length from TCP Bridge: {}", len);
+                    }
+                    let mut payload = vec![0u8; len];
+                    tcp_stream.read_exact(&mut payload).await?;
+
+                    if let Ok(msg) = Message::parse_from_bytes(&payload) {
+                        // อัปเดตสถานะเป็นไฟเขียว (Ready) ทันทีที่ Server ตอบกลับ!
+                        last_register_resp = Some(Instant::now());
+                        let latency = last_register_sent
+                            .map(|x| x.elapsed().as_micros() as i64)
+                            .unwrap_or(1000);
+                        last_register_sent = None;
+                        Config::update_latency(&host, if latency > 0 { latency } else { 1000 });
+
+                        match msg.union {
+                            Some(rendezvous_message::Union::RegisterPeerResponse(rpr)) => {
+                                if rpr.request_pk || !Config::get_key_confirmed() || !Config::get_host_key_confirmed(&rz.host_prefix) {
+                                    let mut msg_out = Message::new();
+                                    msg_out.set_register_pk(RegisterPk {
+                                        id: Config::get_id(),
+                                        uuid: hbb_common::get_uuid().into(),
+                                        pk: Config::get_key_pair().1.into(),
+                                        no_register_device: Config::no_register_device(),
+                                        ..Default::default()
+                                    });
+                                    send_bridge_msg(&mut tcp_stream, &msg_out).await?;
                                 }
-                            },
-                            Some(Err(e)) => bail!("Bridge socket err: {}", e),
-                            None => bail!("Bridge socket closed"),
-                        }
-                    },
-                    _ = timer.tick() => {
-                        if SHOULD_EXIT.load(Ordering::SeqCst) {
-                            break;
-                        }
-                        if deploy_register_throttled().await {
-                            continue;
-                        }
-                        if to_server.is_finished() || from_server.is_finished() {
-                            bail!("TCP Bridge disconnected");
-                        }
-                        let expired = last_register_resp.map(|x| x.elapsed().as_millis() as i64 >= REG_INTERVAL).unwrap_or(true);
-                        let timeout = last_register_sent.map(|x| x.elapsed().as_millis() as i64 >= 3_000).unwrap_or(false);
-                        if timeout || (last_register_sent.is_none() && expired) {
-                            rz.register_peer(Sink::Framed(&mut framed_sock, &target_ep)).await?;
-                            last_register_sent = Some(Instant::now());
+                            }
+                            Some(rendezvous_message::Union::RegisterPkResponse(rpr)) => {
+                                match rpr.result.enum_value() {
+                                    Ok(register_pk_response::Result::OK) => {
+                                        Config::set_key_confirmed(true);
+                                        Config::set_host_key_confirmed(&rz.host_prefix, true);
+                                        *SOLVING_PK_MISMATCH.lock().await = "".to_owned();
+                                        NEEDS_DEPLOY.store(false, Ordering::SeqCst);
+                                    }
+                                    Ok(register_pk_response::Result::UUID_MISMATCH) => {
+                                        Config::set_key_confirmed(false);
+                                        Config::update_id();
+                                        let mut msg_out = Message::new();
+                                        msg_out.set_register_pk(RegisterPk {
+                                            id: Config::get_id(),
+                                            uuid: hbb_common::get_uuid().into(),
+                                            pk: Config::get_key_pair().1.into(),
+                                            no_register_device: Config::no_register_device(),
+                                            ..Default::default()
+                                        });
+                                        send_bridge_msg(&mut tcp_stream, &msg_out).await?;
+                                    }
+                                    _ => {}
+                                }
+                            }
+                            Some(rendezvous_message::Union::PunchHole(ph)) => {
+                                let rz_clone = rz.clone();
+                                let srv_clone = server.clone();
+                                tokio::spawn(async move {
+                                    // เมื่อมีคนขอรีโมทเข้ามาผ่าน THDDNS ให้สั่งเปิดท่อ Relay (hbbr พอร์ต TCP) ทันที!
+                                    let relay_srv = rz_clone.get_relay_server(ph.relay_server.clone());
+                                    let meta = connection_meta(
+                                        ph.control_permissions.into_option(),
+                                        ph.controlled_context.into_option(),
+                                    );
+                                    let uuid = Uuid::new_v4().to_string();
+                                    allow_err!(
+                                        rz_clone.create_relay(
+                                            ph.socket_addr.into(),
+                                            relay_srv,
+                                            uuid,
+                                            srv_clone,
+                                            true,
+                                            true,
+                                            Default::default(),
+                                            String::new(),
+                                            meta,
+                                        ).await
+                                    );
+                                });
+                            }
+                            Some(rendezvous_message::Union::RequestRelay(rr)) => {
+                                let rz_clone = rz.clone();
+                                let srv_clone = server.clone();
+                                tokio::spawn(async move {
+                                    allow_err!(rz_clone.handle_request_relay(rr, srv_clone).await);
+                                });
+                            }
+                            Some(rendezvous_message::Union::FetchLocalAddr(fla)) => {
+                                let rz_clone = rz.clone();
+                                let srv_clone = server.clone();
+                                tokio::spawn(async move {
+                                    allow_err!(rz_clone.handle_intranet(fla, srv_clone).await);
+                                });
+                            }
+                            _ => {}
                         }
                     }
                 }
+                _ = timer.tick() => {
+                    if SHOULD_EXIT.load(Ordering::SeqCst) {
+                        break;
+                    }
+                    let expired = last_register_resp.map(|x| x.elapsed().as_millis() as i64 >= REG_INTERVAL).unwrap_or(true);
+                    let timeout = last_register_sent.map(|x| x.elapsed().as_millis() as i64 >= 3_000).unwrap_or(false);
+                    if timeout || (last_register_sent.is_none() && expired) {
+                        let mut msg_out = Message::new();
+                        if !Config::get_key_confirmed() || !Config::get_host_key_confirmed(&rz.host_prefix) {
+                            msg_out.set_register_pk(RegisterPk {
+                                id: Config::get_id(),
+                                uuid: hbb_common::get_uuid().into(),
+                                pk: Config::get_key_pair().1.into(),
+                                no_register_device: Config::no_register_device(),
+                                ..Default::default()
+                            });
+                        } else {
+                            msg_out.set_register_peer(RegisterPeer {
+                                id: Config::get_id(),
+                                serial: Config::get_serial(),
+                                ..Default::default()
+                            });
+                        }
+                        send_bridge_msg(&mut tcp_stream, &msg_out).await?;
+                        last_register_sent = Some(Instant::now());
+                    }
+                }
             }
-            Ok(())
-        }.await;
-
-        to_server.abort();
-        from_server.abort();
-        res
+        }
+        Ok(())
     }
 
     pub async fn start(server: ServerPtr, host: String) -> ResultType<()> {
