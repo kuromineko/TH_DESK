@@ -1,0 +1,16 @@
+name: ⚡ Build TH_DESK Windows Only (Fast x64)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  Flutter-Windows-x64:
+    uses: ./.github/workflows/flutter-build.yml
+    with:
+      flutter_os: windows
+      # บังคับบิ้วด์เฉพาะโหมด Release ของ Windows x64 เท่านั้น
+      matrix_json: '[{"target": "x86_64-pc-windows-msvc", "mode": "release"}]'
+      upload_Artifacts: true
