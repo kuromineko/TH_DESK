@@ -76,16 +76,89 @@ class _DesktopHomePageState extends State<DesktopHomePage>
         block: _block, mask: true, use: canBeBlocked, child: child);
   }
 
+  /// แถบป้ายหัวเรื่อง TH_DESK สไตล์คลีน (Open Source Free Edition)
+  Widget buildBrandHeader(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      margin: const EdgeInsets.fromLTRB(14, 14, 14, 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDark
+              ? [const Color(0xFF172033), const Color(0xFF101522)]
+              : [const Color(0xFFEFF6FF), const Color(0xFFDBEAFE)],
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: const Color(0xFF0071FF).withOpacity(0.4),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              color: const Color(0xFF0071FF),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(Icons.desktop_windows_rounded,
+                color: Colors.white, size: 17),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "TH_DESK",
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.4,
+                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  ),
+                ),
+                const SizedBox(height: 1),
+                Text(
+                  "Open Source Remote Desktop",
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    color: isDark
+                        ? const Color(0xFF94A3B8)
+                        : const Color(0xFF475569),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Tooltip(
+            message: translate("About"),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(8),
+              onTap: () => DesktopSettingPage.switch2page(SettingsTabKey.about),
+              child: const Padding(
+                padding: EdgeInsets.all(4.0),
+                child: Icon(Icons.info_outline_rounded,
+                    size: 18, color: Color(0xFF38BDF8)),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget buildLeftPane(BuildContext context) {
     final isIncomingOnly = bind.isIncomingOnly();
     final isOutgoingOnly = bind.isOutgoingOnly();
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final children = <Widget>[
       if (!isOutgoingOnly) buildPresetPasswordWarning(),
-      Align(
-        alignment: Alignment.center,
-        child: loadPowered(context),
-      ),
+      buildBrandHeader(context),
       Align(
         alignment: Alignment.center,
         child: loadLogo(),
@@ -130,25 +203,76 @@ class _DesktopHomePageState extends State<DesktopHomePage>
     return ChangeNotifierProvider.value(
       value: gFFI.serverModel,
       child: Container(
-        width: isIncomingOnly ? 280.0 : 235.0,
-        color: isDark ? const Color(0xFF131722) : Theme.of(context).colorScheme.background,
+        width: isIncomingOnly ? 285.0 : 255.0,
+        color: isDark
+            ? const Color(0xFF10141F)
+            : Theme.of(context).colorScheme.background,
         child: Stack(
           children: [
             Column(
               children: [
-                SingleChildScrollView(
-                  controller: _leftPaneScrollController,
-                  child: Column(
-                    key: _childKey,
-                    children: children,
+                Expanded(
+                  child: SingleChildScrollView(
+                    controller: _leftPaneScrollController,
+                    child: Column(
+                      key: _childKey,
+                      children: children,
+                    ),
                   ),
                 ),
-                Expanded(child: Container())
+                // แถบเครดิตด้านล่าง (มุมขวาล่างแสดงเครดิต ขับเคลื่อนโดย RustDesk เล็กๆ)
+                Container(
+                  width: double.infinity,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? const Color(0xFF0C0F17)
+                        : const Color(0xFFF1F5F9),
+                    border: Border(
+                      top: BorderSide(
+                        color: isDark
+                            ? const Color(0xFF1E2536)
+                            : const Color(0xFFE2E8F0),
+                      ),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      InkWell(
+                        onTap: () => launchUrl(
+                            Uri.parse('https://github.com/kuromineko/TH_DESK')),
+                        child: const Text(
+                          "TH_DESK",
+                          style: TextStyle(
+                            fontSize: 10.0,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF38BDF8),
+                          ),
+                        ),
+                      ),
+                      InkWell(
+                        onTap: () => launchUrl(
+                            Uri.parse('https://github.com/rustdesk/rustdesk')),
+                        child: Text(
+                          translate("Powered by RustDesk"),
+                          style: TextStyle(
+                            fontSize: 10.0,
+                            color: isDark
+                                ? const Color(0xFF64748B)
+                                : const Color(0xFF64748B),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
             if (isOutgoingOnly)
               Positioned(
-                bottom: 6,
+                bottom: 34,
                 left: 12,
                 child: Align(
                   alignment: Alignment.centerLeft,
@@ -186,24 +310,25 @@ class _DesktopHomePageState extends State<DesktopHomePage>
     );
   }
 
-  /// การ์ดแสดงหมายเลข ID สไตล์ TH_DESK Modern Card
+  /// การ์ดแสดงหมายเลข ID สไตล์ TH_DESK Modern Card พร้อมปุ่มคัดลอกในคลิกเดียว
   buildIDBoard(BuildContext context) {
     final model = gFFI.serverModel;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final RxBool copyHover = false.obs;
     return Container(
       margin: const EdgeInsets.only(left: 14, right: 14, top: 8),
       padding: const EdgeInsets.fromLTRB(12, 8, 8, 10),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF171B26) : Colors.white,
+        color: isDark ? const Color(0xFF151B29) : Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isDark ? const Color(0xFF252B3B) : const Color(0xFFE2E8F0),
+          color: isDark ? const Color(0xFF232D42) : const Color(0xFFE2E8F0),
         ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-           SizedBox(
+          SizedBox(
             height: 26,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -224,7 +349,36 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                     ),
                   ],
                 ),
-                buildPopupMenu(context)
+                Row(
+                  children: [
+                    Tooltip(
+                      message: translate("Copy"),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(8),
+                        onTap: () {
+                          Clipboard.setData(
+                              ClipboardData(text: model.serverId.text));
+                          showToast(translate("Copied"));
+                        },
+                        onHover: (v) => copyHover.value = v,
+                        child: Obx(
+                          () => Padding(
+                            padding: const EdgeInsets.all(4.0),
+                            child: Icon(
+                              Icons.copy_rounded,
+                              size: 15,
+                              color: copyHover.value
+                                  ? const Color(0xFF38BDF8)
+                                  : const Color(0xFF94A3B8),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 2),
+                    buildPopupMenu(context)
+                  ],
+                )
               ],
             ),
           ),
@@ -304,13 +458,14 @@ class _DesktopHomePageState extends State<DesktopHomePage>
     final showOneTime = model.approveMode != 'click' &&
         model.verificationMethod != kUsePermanentPassword;
     return Container(
-      margin: const EdgeInsets.only(left: 14.0, right: 14.0, top: 10, bottom: 10),
+      margin:
+          const EdgeInsets.only(left: 14.0, right: 14.0, top: 10, bottom: 10),
       padding: const EdgeInsets.fromLTRB(12, 10, 8, 8),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF171B26) : Colors.white,
+        color: isDark ? const Color(0xFF151B29) : Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isDark ? const Color(0xFF252B3B) : const Color(0xFFE2E8F0),
+          color: isDark ? const Color(0xFF232D42) : const Color(0xFFE2E8F0),
         ),
       ),
       child: Column(
@@ -414,7 +569,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
     final isOutgoingOnly = bind.isOutgoingOnly();
     return Padding(
       padding:
-          const EdgeInsets.only(left: 16.0, right: 14, top: 14.0, bottom: 4),
+          const EdgeInsets.only(left: 16.0, right: 14, top: 10.0, bottom: 4),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -435,7 +590,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                   child: Text(
                     translate("Your Desktop"),
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontSize: 17.5,
+                          fontSize: 17.0,
                           fontWeight: FontWeight.bold,
                         ),
                   ),
@@ -471,7 +626,8 @@ class _DesktopHomePageState extends State<DesktopHomePage>
       final isToUpdate = (isWindows || isMacOS) && bind.mainIsInstalled();
       String btnText = isToUpdate ? 'Update' : 'Download';
       GestureTapCallback onPressed = () async {
-        final Uri url = Uri.parse('https://github.com/kuromineko/TH_DESK/releases');
+        final Uri url =
+            Uri.parse('https://github.com/kuromineko/TH_DESK/releases');
         await launchUrl(url);
       };
       if (isToUpdate) {
@@ -598,7 +754,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
     return Container();
   }
 
-  /// การ์ดแจ้งเตือนปุ่ม Install โฉมใหม่ (เปลี่ยนจากสีชมพูเป็น Modern Deep Navy & Blue Gradient)
+  /// การ์ดแจ้งเตือนปุ่ม Install โฉมใหม่ (Modern Deep Navy & Blue Gradient)
   Widget buildInstallCard(String title, String content, String btnText,
       GestureTapCallback onPressed,
       {double marginTop = 8.0,

@@ -2549,8 +2549,45 @@ class _About extends StatefulWidget {
 }
 
 class _AboutState extends State<_About> {
+  Widget _buildInfoRow(String label, String value, bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 110,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: isDark
+                    ? const Color(0xFF94A3B8)
+                    : const Color(0xFF64748B),
+              ),
+            ),
+          ),
+          Expanded(
+            child: SelectionArea(
+              child: Text(
+                value,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return futureBuilder(future: () async {
       final license = await bind.mainGetLicense();
       final version = await bind.mainGetVersion();
@@ -2570,76 +2607,145 @@ class _AboutState extends State<_About> {
       final buildDate = data['buildDate'].toString();
       final fingerprint = data['fingerprint'].toString();
       final myId = data['myId'].toString();
-      const linkStyle = TextStyle(decoration: TextDecoration.underline);
       final scrollController = ScrollController();
+
       return SingleChildScrollView(
         controller: scrollController,
-        child: _Card(title: translate('About RustDesk'), children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(
-                height: 8.0,
-              ),
-              SelectionArea(
-                  child: Text('${translate('Version')}: $version')
-                      .marginSymmetric(vertical: 4.0)),
-              SelectionArea(
-                  child: Text('${translate('Build Date')}: $buildDate')
-                      .marginSymmetric(vertical: 4.0)),
-              if (!isWeb)
-                SelectionArea(
-                    child: Text('${translate('Fingerprint')}: $fingerprint')
-                        .marginSymmetric(vertical: 4.0)),
-              SelectionArea(
-                  child: Text('${translate('ID')}: $myId')
-                      .marginSymmetric(vertical: 4.0)),
-              InkWell(
-                  onTap: () {
-                    launchUrlString('https://rustdesk.com/privacy.html');
-                  },
-                  child: Text(
-                    translate('Privacy Statement'),
-                    style: linkStyle,
-                  ).marginSymmetric(vertical: 4.0)),
-              InkWell(
-                  onTap: () {
-                    launchUrlString('https://rustdesk.com');
-                  },
-                  child: Text(
-                    translate('Website'),
-                    style: linkStyle,
-                  ).marginSymmetric(vertical: 4.0)),
-              Container(
-                decoration: const BoxDecoration(color: Color(0xFF2c8cff)),
-                padding:
-                    const EdgeInsets.symmetric(vertical: 24, horizontal: 8),
-                child: SelectionArea(
-                    child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // การ์ดที่ 1: ข้อมูลโปรแกรมและเวอร์ชัน (TH_DESK)
+            _Card(
+              title: 'เกี่ยวกับ TH_DESK (About TH_DESK)',
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(left: _kContentHMargin, top: 4),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'โปรแกรมรีโมทเดสก์ท็อปโอเพนซอร์ส แจกจ่ายให้ใช้งานฟรีสำหรับทุกคน (Open Source Community)',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          color: Color(0xFF38BDF8),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      _buildInfoRow(translate('Version'), version, isDark),
+                      _buildInfoRow(translate('Build Date'), buildDate, isDark),
+                      _buildInfoRow(translate('ID'), myId, isDark),
+                      if (!isWeb && fingerprint.isNotEmpty)
+                        _buildInfoRow(
+                            translate('Fingerprint'), fingerprint, isDark),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+
+            // การ์ดที่ 2: ผู้พัฒนาและดูแลโปรเจกต์ TH_DESK (kuromineko)
+            _Card(
+              title: 'ผู้พัฒนาและดูแลโปรเจกต์ (Developer & Maintainer)',
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(left: _kContentHMargin, top: 4),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildInfoRow('Developer', 'kuromineko', isDark),
+                      _buildInfoRow('Repository',
+                          'https://github.com/kuromineko/TH_DESK', isDark),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 10,
+                        runSpacing: 8,
                         children: [
-                          Text(
-                            'Copyright © ${DateTime.now().toString().substring(0, 4)} Purslane Tech Pte. Ltd.\n$license',
-                            style: const TextStyle(color: Colors.white),
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF0071FF),
+                              foregroundColor: Colors.white,
+                            ),
+                            onPressed: () => launchUrlString(
+                                'https://github.com/kuromineko/TH_DESK'),
+                            icon: const Icon(Icons.code_rounded, size: 16),
+                            label: const Text('GitHub ของฉัน (kuromineko/TH_DESK)'),
                           ),
-                          Text(
-                            translate('Slogan_tip'),
-                            style: TextStyle(
-                                fontWeight: FontWeight.w800,
-                                color: Colors.white),
-                          )
+                          OutlinedButton.icon(
+                            onPressed: () => launchUrlString(
+                                'https://github.com/kuromineko/TH_DESK/releases'),
+                            icon: const Icon(Icons.system_update_alt_rounded,
+                                size: 16),
+                            label: const Text('ดาวน์โหลดรุ่นล่าสุด (Releases)'),
+                          ),
                         ],
                       ),
-                    ),
-                  ],
-                )),
-              ).marginSymmetric(vertical: 4.0)
-            ],
-          ).marginOnly(left: _kContentHMargin)
-        ]),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+
+            // การ์ดที่ 3: ให้เกียรติโปรเจกต์ต้นฉบับ RustDesk & สัญญาอนุญาต Open Source
+            _Card(
+              title: 'กิตติกรรมประกาศและโปรเจกต์ต้นฉบับ (Powered by RustDesk)',
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(left: _kContentHMargin, top: 4),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SelectionArea(
+                        child: Text(
+                          'โปรแกรม TH_DESK พัฒนาต่อยอดจากซอร์สโค้ดโอเพนซอร์สของโปรเจกต์ RustDesk (Copyright © Purslane Tech Pte. Ltd. และคณะผู้พัฒนา RustDesk) ขอขอบคุณและให้เกียรติทีมผู้พัฒนาโปรเจกต์หลักที่สร้างซอฟต์แวร์พื้นฐานอันยอดเยี่ยมนี้\n'
+                          'เผยแพร่ภายใต้สัญญาอนุญาตสาธารณะ GNU Affero General Public License v3.0 (AGPL-3.0) $license',
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            height: 1.5,
+                            color: isDark
+                                ? const Color(0xFFCBD5E1)
+                                : const Color(0xFF334155),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 10,
+                        runSpacing: 8,
+                        children: [
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF252E42),
+                              foregroundColor: Colors.white,
+                            ),
+                            onPressed: () => launchUrlString(
+                                'https://github.com/rustdesk/rustdesk'),
+                            icon: const Icon(Icons.open_in_new_rounded, size: 16),
+                            label: const Text(
+                                'โปรเจกต์หลัก RustDesk (rustdesk/rustdesk)'),
+                          ),
+                          OutlinedButton.icon(
+                            onPressed: () =>
+                                launchUrlString('https://rustdesk.com'),
+                            icon: const Icon(Icons.language_rounded, size: 16),
+                            label: Text(translate('Website')),
+                          ),
+                          OutlinedButton.icon(
+                            onPressed: () => launchUrlString(
+                                'https://www.gnu.org/licenses/agpl-3.0.html'),
+                            icon: const Icon(Icons.gavel_rounded, size: 16),
+                            label: const Text('สัญญาอนุญาต AGPL-3.0'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
       );
     });
   }

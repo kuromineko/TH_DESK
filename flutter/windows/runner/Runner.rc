@@ -89,14 +89,14 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "Purslane Tech Pte. Ltd." "\0"
-            VALUE "FileDescription", "RustDesk Remote Desktop" "\0"
-            VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "rustdesk" "\0"
-            VALUE "LegalCopyright", "Copyright © 2026 Purslane Tech Pte. Ltd. All rights reserved." "\0"
-            VALUE "OriginalFilename", "rustdesk.exe" "\0"
-            VALUE "ProductName", "RustDesk" "\0"
-            VALUE "ProductVersion", VERSION_AS_STRING "\0"
+            VALUE "CompanyName", "TH_DESK Project by kuromineko" "\0"
+            VALUE "FileDescription", "TH_DESK Remote Desktop Pro" "\0"
+            VALUE "FileVersion", "2.0.0.0" "\0"
+            VALUE "InternalName", "TH_DESK" "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 kuromineko (TH_DESK) & RustDesk Contributors. Licensed under AGPL-3.0." "\0"
+            VALUE "OriginalFilename", "TH_DESK.exe" "\0"
+            VALUE "ProductName", "TH_DESK Pro Edition" "\0"
+            VALUE "ProductVersion", "2.0.0" "\0"
         END
     END
     BLOCK "VarFileInfo"
