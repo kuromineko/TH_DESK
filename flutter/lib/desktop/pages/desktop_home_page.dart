@@ -243,14 +243,13 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                       InkWell(
                         onTap: () => launchUrl(
                             Uri.parse('https://github.com/kuromineko/TH_DESK')),
-                        child: const Text(
-                          "TH_DESK",
-                          style: TextStyle(
-                            fontSize: 10.0,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF38BDF8),
-                          ),
+                      child: const Text(
+                        "Powered by RustDesk",
+                        style: TextStyle(
+                          fontSize: 10.0,
+                          color: Color(0xFF64748B),
                         ),
+                      ),
                       ),
                       InkWell(
                         onTap: () => launchUrl(
