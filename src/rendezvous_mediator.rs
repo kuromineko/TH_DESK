@@ -601,37 +601,37 @@ impl RendezvousMediator {
         // ส่งรหัส 0xFE บอก TH_DESK_Server ว่าขอใช้สะพาน TCP-to-UDP Bridge!
         tcp_stream.write_all(&[0xFE]).await?;
 
-        let local_addr = tcp_stream.local_addr()?.into_target_addr()?;
+        // สร้าง UDP จำลองในเครื่องตัวเอง (127.0.0.1)
+        let local_udp = hbb_common::tokio::net::UdpSocket::bind("127.0.0.1:0").await?;
+        let bridge_local_addr = local_udp.local_addr()?;
+        let (mut framed_sock, target_ep) = new_udp_for(&bridge_local_addr.to_string(), CONNECT_TIMEOUT).await?;
+
         let mut rz = Self {
-            addr: local_addr,
+            addr: target_ep.clone(),
             host: host.clone(),
             host_prefix: Self::get_host_prefix(&host),
             keep_alive: crate::DEFAULT_KEEP_ALIVE,
         };
 
-        // สร้าง UDP จำลองในเครื่องตัวเอง (127.0.0.1) เพื่อแปลงเข้า FramedSocket ของเดิมโดยไม่ต้องรื้อโครงสร้าง!
-        let local_udp = hbb_common::tokio::net::UdpSocket::bind("127.0.0.1:0").await?;
-        let bridge_local_ep = local_udp.local_addr()?;
-        let mut framed_sock = FramedSocket::new("127.0.0.1:0").await?;
-        let framed_ep = framed_sock.local_addr();
-        let target_ep = bridge_local_ep.into_target_addr()?;
-
         let (mut tcp_r, mut tcp_w) = tcp_stream.into_split();
         let udp_r = std::sync::Arc::new(local_udp);
         let udp_w = udp_r.clone();
+        let client_udp_addr = std::sync::Arc::new( std::sync::Mutex::new(None::<SocketAddr>) );
+        let client_udp_addr_clone = client_udp_addr.clone();
 
         // ท่อส่ง: อ่านจาก FramedSocket -> ห่อใส่ TCP ส่งไปหา TH_DESK_Server
         let to_server = tokio::spawn(async move {
             let mut buf = [0u8; 65535];
-            while let Ok((n, _)) = udp_r.recv_from(&mut buf).await {
+            while let Ok((n, src_addr)) = udp_r.recv_from(&mut buf).await {
                 if n == 0 { continue; }
+                *client_udp_addr_clone.lock().unwrap() = Some(src_addr);
                 let len_bytes = (n as u16).to_le_bytes();
                 if tcp_w.write_all(&len_bytes).await.is_err() { break; }
                 if tcp_w.write_all(&buf[..n]).await.is_err() { break; }
             }
         });
 
-        // ท่อรับ: อ่านจาก TCP ของ TH_DESK_Server -> โยนเข้า FramedSocket
+        // ท่อรับ: อ่านจาก TCP ของ TH_DESK_Server -> โยนกลับเข้า FramedSocket
         let from_server = tokio::spawn(async move {
             let mut len_buf = [0u8; 2];
             while tcp_r.read_exact(&mut len_buf).await.is_ok() {
@@ -639,7 +639,10 @@ impl RendezvousMediator {
                 if len == 0 || len > 65500 { break; }
                 let mut payload = vec![0u8; len];
                 if tcp_r.read_exact(&mut payload).await.is_err() { break; }
-                if udp_w.send_to(&payload, framed_ep).await.is_err() { break; }
+                let dest_opt = *client_udp_addr.lock().unwrap();
+                if let Some(dest) = dest_opt {
+                    if udp_w.send_to(&payload, dest).await.is_err() { break; }
+                }
             }
         });
 
